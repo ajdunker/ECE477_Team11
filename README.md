@@ -7,3 +7,5 @@ Dan Suciu - Team Captain
 Mitch Bouma  
 Alex Dunker  
 Nadav Zinger  
+
+Additional documentation available on our team website: https://engineering.purdue.edu/477grp11/
