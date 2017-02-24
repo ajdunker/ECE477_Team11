@@ -13,6 +13,7 @@ using Microsoft.Speech.AudioFormat;
 using Microsoft.Speech.Recognition;
 using System.IO;
 using System.Threading;
+using System.IO.Ports;
 
 namespace KinectTest
 {
@@ -43,7 +44,6 @@ namespace KinectTest
         KinectAudioSource source;
         SpeechRecognitionEngine sre;
         Stream s;
-
 
         public Game1()
         {
@@ -87,6 +87,26 @@ namespace KinectTest
             try
             {
                 kinectSensor.Start();
+
+                // Obtain the KinectAudioSource to do audio capture
+                source = kinectSensor.AudioSource;
+                source.EchoCancellationMode = EchoCancellationMode.None; // No AEC for this sample
+                source.AutomaticGainControlEnabled = false; // Important to turn this off for speech recognition
+
+                ri = GetKinectRecognizer();
+
+                if (ri != null)
+                {
+                    Console.WriteLine("*** using speech");
+
+                    int wait = 4;
+                    while (wait > 0)
+                    {
+                        wait--;
+                        Thread.Sleep(1000);
+                    }
+                    kinectSensor.Start();
+                }
             }
             catch
             {
@@ -208,39 +228,93 @@ namespace KinectTest
                 return;
             }
 
-            switch (kinectSensor.Status)
-            {
-                case KinectStatus.Connected:
-                    {
-                        break;
-                    }
-                case KinectStatus.Disconnected:
-                    {
-                        break;
-                    }
-                case KinectStatus.NotPowered:
-                    {
-                        break;
-                    }
-                default:
-                    {
-                        break;
-                    }
-            }
-
             //Initialize the found and connected device
             if (kinectSensor.Status == KinectStatus.Connected)
             {
                 InitializeKinect();
             }
+
+            sre = new SpeechRecognitionEngine(ri.Id);
+
+            var colors = new Choices();
+            colors.Add("red");
+            colors.Add("green");
+            colors.Add("blue");
+            colors.Add("clear");
+            colors.Add("fridge me a beer");
+
+            var gb = new GrammarBuilder { Culture = ri.Culture };
+            gb.Culture = ri.Culture;
+
+            // Specify the culture to match the recognizer in case we are running in a different culture.                                 
+            gb.Append(colors);
+
+            // Create the actual Grammar instance, and then load it into the speech recognizer.
+            var g = new Grammar(gb);
+
+            sre.LoadGrammar(g);
+            sre.SpeechRecognized += SreSpeechRecognized;
+            //sre.SpeechHypothesized += SreSpeechHypothesized;
+            sre.SpeechRecognitionRejected += SreSpeechRecognitionRejected;
+            //sre.SpeechDetected += SreSpeechDetected;
+
+            s = source.Start();
+
+            sre.SetInputToAudioStream(s, new SpeechAudioFormatInfo(EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
+            sre.RecognizeAsync(RecognizeMode.Multiple);
         }
 
         protected override void Initialize()
         {
+            SerialPort port = new SerialPort("COM4", 9600, Parity.None, 8, StopBits.One);
+
+            // Open the port for communications
+            port.Open();
+
+            // Write a string
+            port.Write("Hello World");
+
+            // Close the port
+            port.Close();
+
             KinectSensor.KinectSensors.StatusChanged += new EventHandler<StatusChangedEventArgs>(KinectSensors_StatusChanged);
             DiscoverKinectSensor();
 
             base.Initialize();
+        }
+
+        private static RecognizerInfo GetKinectRecognizer()
+        {
+            Func<RecognizerInfo, bool> matchingFunc = r =>
+            {
+                string value;
+                r.AdditionalInfo.TryGetValue("Kinect", out value);
+                return "True".Equals(value, StringComparison.InvariantCultureIgnoreCase) && "en-US".Equals(r.Culture.Name, StringComparison.InvariantCultureIgnoreCase);
+            };
+            return SpeechRecognitionEngine.InstalledRecognizers().Where(matchingFunc).FirstOrDefault();
+        }
+
+        private static void SreSpeechRecognitionRejected(object sender, SpeechRecognitionRejectedEventArgs e)
+        {
+
+            if (e.Result != null)
+            {
+                Console.WriteLine("*** speech SreSpeechRecognitionRejected");
+            }
+        }
+
+        private void SreSpeechRecognized(object sender, SpeechRecognizedEventArgs e)
+        {
+
+            // Console.WriteLine("*** speech recog");
+            if (e.Result.Confidence >= 0.80)
+            {
+                Console.WriteLine("*** setColor asked for " + e.Result.Text + ", with a confidence of: " + e.Result.Confidence.ToString());
+            }
+            else
+            {
+                Console.WriteLine("Heard something, but the confidence is too low: " + e.Result.Confidence.ToString());
+            }
         }
 
         protected override void LoadContent()

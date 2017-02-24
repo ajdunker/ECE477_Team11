@@ -1,0 +1,1 @@
+C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTestContent\obj\x86\Debug\KinectTestContent.contentprojResolveAssemblyReference.cache
