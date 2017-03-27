@@ -94,7 +94,6 @@ namespace KinectTest
                 source.AutomaticGainControlEnabled = false; // Important to turn this off for speech recognition
 
                 ri = GetKinectRecognizer();
-
                 if (ri != null)
                 {
                     Console.WriteLine("*** using speech");
@@ -130,7 +129,6 @@ namespace KinectTest
                     kinectRGBVideo = new Texture2D(graphics.GraphicsDevice, colorImageFrame.Width, colorImageFrame.Height);
 
                     //Go through each pixel and set the bytes correctly
-                    //Each pixel has a Red, Green and Blue
                     int index = 0;
                     for (int y = 0; y < colorImageFrame.Height; y++)
                     {
@@ -185,9 +183,7 @@ namespace KinectTest
                     }
 
                     Skeleton playerSkeleton = skeletonData[playerIndex];
-                    //System.Diagnostics.Debug.WriteLine("tracking user: " + skeletonData[playerIndex].TrackingId);
-                    //System.Diagnostics.Debug.WriteLine("skeleton array: " + skeletonData[0].TrackingState + "  " + skeletonData[1].TrackingState + "  " + skeletonData[2].TrackingState + "  " + skeletonData[3].TrackingState + "  " + skeletonData[4].TrackingState + "  " + skeletonData[5].TrackingState);
-                    //foreach (Skeleton playerSkeleton in skeletonData.Where(s => s.TrackingState != SkeletonTrackingState.NotTracked))
+                    double theta;
                     if (skeletonData[playerIndex] != null)
                     {
                         rightHand = skeletonData[playerIndex].Joints[JointType.HandRight];
@@ -195,10 +191,12 @@ namespace KinectTest
                         leftHand = skeletonData[playerIndex].Joints[JointType.HandLeft];
                         leftShoulder = skeletonData[playerIndex].Joints[JointType.ShoulderLeft];
                         head = skeletonData[playerIndex].Joints[JointType.Head];
-                        //System.Diagnostics.Debug.WriteLine("head position of user: " + playerSkeleton.TrackingId + " is: " + head.Position.X);
                         if (rightHand.Position.Y > rightShoulder.Position.Y && leftHand.Position.Y > leftShoulder.Position.Y && rightHand.Position.X < rightShoulder.Position.X && leftHand.Position.X < leftShoulder.Position.X && leftHand.Position.X < rightShoulder.Position.X)
                         {
                             System.Diagnostics.Debug.WriteLine("Recognized dab on user: " + playerSkeleton.TrackingId);
+                            theta = Math.Abs(Math.Atan(head.Position.X / head.Position.Z) * 180 / Math.PI);
+                            sendUART(head.Position.X, head.Position.Z, theta);
+                            System.Threading.Thread.Sleep(5000);
                         }
                         else
                         {
@@ -217,7 +215,6 @@ namespace KinectTest
             {
                 if (sensor.Status == KinectStatus.Connected)
                 {
-                    //Found one, set our sensor to this
                     kinectSensor = sensor;
                     break;
                 }
@@ -254,9 +251,7 @@ namespace KinectTest
 
             sre.LoadGrammar(g);
             sre.SpeechRecognized += SreSpeechRecognized;
-            //sre.SpeechHypothesized += SreSpeechHypothesized;
             sre.SpeechRecognitionRejected += SreSpeechRecognitionRejected;
-            //sre.SpeechDetected += SreSpeechDetected;
 
             s = source.Start();
 
@@ -266,21 +261,41 @@ namespace KinectTest
 
         protected override void Initialize()
         {
-            SerialPort port = new SerialPort("COM4", 9600, Parity.None, 8, StopBits.One);
-
-            // Open the port for communications
-            port.Open();
-
-            // Write a string
-            port.Write("Hello World");
-
-            // Close the port
-            port.Close();
-
             KinectSensor.KinectSensors.StatusChanged += new EventHandler<StatusChangedEventArgs>(KinectSensors_StatusChanged);
             DiscoverKinectSensor();
 
             base.Initialize();
+        }
+
+        private void sendUART(float xVal, float zVal, double theta)
+        {
+            SerialPort port = new SerialPort("COM4", 9600, Parity.None, 8, StopBits.One);
+
+            //open the port for communications
+            port.Open();
+            int intAngle = Convert.ToInt32(theta);
+            Console.WriteLine("Angle is: " + theta);
+            char charAngle = Convert.ToChar(intAngle);
+            int intDist = Convert.ToInt32(zVal);
+            char charDist = Convert.ToChar(intDist);
+            byte[] buffer1 = { (byte)'A', (byte)'-', (byte)charAngle, (byte)'D', (byte)charDist };
+            Console.Write("Char angle: " + charAngle);
+            Console.Write("Char dist: " + charDist);
+            if (xVal < 0)
+            {
+                port.Write(buffer1, 0, 5);
+                Console.WriteLine("A-" + Convert.ToString(charAngle, 2) + "D" + Convert.ToString(charDist,2));
+            }
+            else
+            {
+                port.Write(buffer1, 0, 5);
+                Console.WriteLine("A-" + charAngle + "D" + charDist);
+                Console.WriteLine((char)68);
+            }
+
+            Console.WriteLine("Sent message");
+            //close port
+            port.Close();
         }
 
         private static RecognizerInfo GetKinectRecognizer()
