@@ -269,32 +269,34 @@ namespace KinectTest
 
         private void sendUART(float xVal, float zVal, double theta)
         {
-            SerialPort port = new SerialPort("COM4", 9600, Parity.None, 8, StopBits.One);
+            SerialPort port = new SerialPort("COM4", 300, Parity.None, 8, StopBits.One);
+
+            int intAngle = (int)theta;
+            Console.WriteLine("intAngle: " + intAngle);
+            char charAngle = (char)intAngle;
+            int intFirstDistDecimal = Convert.ToInt32((zVal - Math.Truncate(zVal)) * 10);
+            char charFirstDistDecimal = (char)intFirstDistDecimal;
+            int intFirstDistVal = Convert.ToInt32(Math.Truncate(zVal));
+            char charFirstDistVal = (char)intFirstDistVal;
+
+            //Console.WriteLine("test: " + (char)66);
 
             //open the port for communications
             port.Open();
-            int intAngle = Convert.ToInt32(theta);
-            Console.WriteLine("Angle is: " + theta);
-            char charAngle = Convert.ToChar(intAngle);
-            int intDist = Convert.ToInt32(zVal);
-            char charDist = Convert.ToChar(intDist);
-            byte[] buffer1 = { (byte)'A', (byte)'-', (byte)charAngle, (byte)'D', (byte)charDist };
-            Console.Write("Char angle: " + charAngle);
-            Console.Write("Char dist: " + charDist);
+
             if (xVal < 0)
             {
-                port.Write(buffer1, 0, 5);
-                Console.WriteLine("A-" + Convert.ToString(charAngle, 2) + "D" + Convert.ToString(charDist,2));
+                port.Write("A-" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
+                Console.WriteLine("A-" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
             }
             else
             {
-                port.Write(buffer1, 0, 5);
-                Console.WriteLine("A-" + charAngle + "D" + charDist);
-                Console.WriteLine((char)68);
+                port.Write("A+" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
+                Console.WriteLine("A+" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
             }
 
             Console.WriteLine("Sent message");
-            //close port
+
             port.Close();
         }
 
