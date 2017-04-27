@@ -1,5 +1,9 @@
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\Content\hand.xnb
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\Content\blue-dot.xnb
+C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\BeerMe Kinect.exe.manifest
+C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\BeerMe Kinect.application
+C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\BeerMe Kinect.exe
+C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\BeerMe Kinect.pdb
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\Microsoft.Kinect.dll
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\Microsoft.Speech.dll
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\Microsoft.Xna.Framework.dll
@@ -14,10 +18,6 @@ C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debu
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\Microsoft.Xna.Framework.Input.Touch.xml
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\obj\x86\Debug\KinectTest.csprojResolveAssemblyReference.cache
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\obj\x86\Debug\Microsoft.Xna.Framework.RuntimeProfile.txt
-C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\BeerMe Kinect.exe.manifest
-C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\BeerMe Kinect.application
-C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\BeerMe Kinect.exe
-C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\bin\x86\Debug\BeerMe Kinect.pdb
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\obj\x86\Debug\BeerMe Kinect.exe.manifest
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\obj\x86\Debug\BeerMe Kinect.application
 C:\Users\Mitch\Documents\GitHub\ECE477_Team11\KinectTest\KinectTest\obj\x86\Debug\BeerMe Kinect.exe
