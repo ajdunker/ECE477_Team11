@@ -38,7 +38,9 @@ namespace KinectTest
         Vector2 handPosition = new Vector2();
         List<Vector2> positions = new List<Vector2>();
         int playerIndex = 0;
-        int test = 1;
+        int numFramesOnUser = 0;
+        Boolean enableSkeleton = true;
+        int dabHoldCount = 0;
 
         RecognizerInfo ri;
         KinectAudioSource source;
@@ -89,7 +91,7 @@ namespace KinectTest
                 kinectSensor.Start();
 
                 // Obtain the KinectAudioSource to do audio capture
-                source = kinectSensor.AudioSource;
+                /*source = kinectSensor.AudioSource;
                 source.EchoCancellationMode = EchoCancellationMode.None; // No AEC for this sample
                 source.AutomaticGainControlEnabled = false; // Important to turn this off for speech recognition
 
@@ -105,7 +107,7 @@ namespace KinectTest
                         Thread.Sleep(1000);
                     }
                     kinectSensor.Start();
-                }
+                }*/
             }
             catch
             {
@@ -146,6 +148,8 @@ namespace KinectTest
 
         void kinectSensor_SkeletonFrameReady(object sender, SkeletonFrameReadyEventArgs e)
         {
+            if (!enableSkeleton)
+                return;
             using (SkeletonFrame skeletonFrame = e.OpenSkeletonFrame())
             {
                 if (skeletonFrame != null)
@@ -163,25 +167,31 @@ namespace KinectTest
                     foreach (Skeleton skel in skeletonData.Where(s => s.TrackingId != 0))
                         skeletonLength += 1;
 
-                    test += 1;
-                    if (test % 5 == 0)
+                    numFramesOnUser += 1;
+                    if (numFramesOnUser >= 5 && dabHoldCount == 0)
                     {
-                        playerIndex += 1;
+                        playerIndex = (playerIndex + 1) % 6;
+                        numFramesOnUser = 0;
+                        //dabHoldCount = 0;
                     }
-                    if (playerIndex == 6)
+                    /*if (playerIndex == 6 && dabHoldCount == 0)
                     {
                         playerIndex = 0;
-                    }
+                        //numFramesOnUser = 0;
+                        dabHoldCount = 0;
+                    }*/
 
                     if (skeletonData[playerIndex].TrackingId != 0)
                     {
                         kinectSensor.SkeletonStream.ChooseSkeletons(skeletonData[playerIndex].TrackingId);
+                        //dabHoldCount = 0;
                     }
                     else
                     {
                         return;
                     }
-
+                    //Console.WriteLine("player index: " + playerIndex);
+                    //Console.WriteLine("skeleton length: " + skeletonLength);
                     Skeleton playerSkeleton = skeletonData[playerIndex];
                     double theta;
                     if (skeletonData[playerIndex] != null)
@@ -191,16 +201,28 @@ namespace KinectTest
                         leftHand = skeletonData[playerIndex].Joints[JointType.HandLeft];
                         leftShoulder = skeletonData[playerIndex].Joints[JointType.ShoulderLeft];
                         head = skeletonData[playerIndex].Joints[JointType.Head];
+                        //Console.WriteLine("player index: " + playerIndex + " hold count is: " + dabHoldCount);
                         if (rightHand.Position.Y > rightShoulder.Position.Y && leftHand.Position.Y > leftShoulder.Position.Y && rightHand.Position.X < rightShoulder.Position.X && leftHand.Position.X < leftShoulder.Position.X && leftHand.Position.X < rightShoulder.Position.X)
                         {
-                            System.Diagnostics.Debug.WriteLine("Recognized dab on user: " + playerSkeleton.TrackingId);
-                            theta = Math.Abs(Math.Atan(head.Position.X / head.Position.Z) * 180 / Math.PI);
-                            sendUART(head.Position.X, head.Position.Z, theta);
-                            System.Threading.Thread.Sleep(5000);
+                            if (dabHoldCount == 30)
+                            {
+                                System.Diagnostics.Debug.WriteLine("Recognized dab on user: " + playerSkeleton.TrackingId);
+                                theta = Math.Abs(Math.Atan(head.Position.X / head.Position.Z) * 180 / Math.PI);
+                                enableSkeleton = false;
+                                sendUART(head.Position.X, head.Position.Z, theta);
+                                System.Threading.Thread.Sleep(10000);
+                                enableSkeleton = true;
+                                dabHoldCount = 0;
+                            }
+                            else
+                            {
+                                dabHoldCount += 1;
+                            }
                         }
                         else
                         {
                             //System.Diagnostics.Debug.WriteLine("No gesture recognized for user: " + playerSkeleton.TrackingId);
+                            dabHoldCount = 0;
                         }
 
                         //handPosition = new Vector2((((0.5f *rightHand.Position.X) + 0.5f) * (640)), (((-0.5f * rightHand.Position.Y) + 0.5f) * (480)));
@@ -231,20 +253,20 @@ namespace KinectTest
                 InitializeKinect();
             }
 
-            sre = new SpeechRecognitionEngine(ri.Id);
+            /*sre = new SpeechRecognitionEngine(ri.Id);
 
-            var colors = new Choices();
-            colors.Add("red");
-            colors.Add("green");
-            colors.Add("blue");
-            colors.Add("clear");
-            colors.Add("fridge me a beer");
+            var speechList = new Choices();
+            speechList.Add("hello");
+            speechList.Add("computer");
+            speechList.Add("engineer");
+            speechList.Add("this is a test");
+            speechList.Add("fridge me a beer");
 
             var gb = new GrammarBuilder { Culture = ri.Culture };
             gb.Culture = ri.Culture;
 
             // Specify the culture to match the recognizer in case we are running in a different culture.                                 
-            gb.Append(colors);
+            gb.Append(speechList);
 
             // Create the actual Grammar instance, and then load it into the speech recognizer.
             var g = new Grammar(gb);
@@ -256,30 +278,35 @@ namespace KinectTest
             s = source.Start();
 
             sre.SetInputToAudioStream(s, new SpeechAudioFormatInfo(EncodingFormat.Pcm, 16000, 16, 1, 32000, 2, null));
-            sre.RecognizeAsync(RecognizeMode.Multiple);
+            sre.RecognizeAsync(RecognizeMode.Multiple);*/
         }
 
         protected override void Initialize()
         {
             KinectSensor.KinectSensors.StatusChanged += new EventHandler<StatusChangedEventArgs>(KinectSensors_StatusChanged);
             DiscoverKinectSensor();
-
             base.Initialize();
         }
 
         private void sendUART(float xVal, float zVal, double theta)
         {
+            char[] portReadBuffer = new char[8];
             SerialPort port = new SerialPort("COM4", 300, Parity.None, 8, StopBits.One);
 
-            int intAngle = (int)theta;
-            Console.WriteLine("intAngle: " + intAngle);
+            int intAngle = (int)(theta/2);
+            if (intAngle > 10)
+            {
+                intAngle = 10 ;
+            }
+            //Console.WriteLine("intAngle: " + intAngle);
             char charAngle = (char)intAngle;
             int intFirstDistDecimal = Convert.ToInt32((zVal - Math.Truncate(zVal)) * 10);
             char charFirstDistDecimal = (char)intFirstDistDecimal;
             int intFirstDistVal = Convert.ToInt32(Math.Truncate(zVal));
             char charFirstDistVal = (char)intFirstDistVal;
 
-            //Console.WriteLine("test: " + (char)66);
+            Console.WriteLine("angle used: " + intAngle);
+            Console.WriteLine("distance used: " + intFirstDistVal + "." + intFirstDistDecimal);
 
             //open the port for communications
             port.Open();
@@ -287,17 +314,16 @@ namespace KinectTest
             if (xVal < 0)
             {
                 port.Write("A-" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
-                Console.WriteLine("A-" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
+                //Console.WriteLine("sent to micro: A-" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
             }
             else
             {
                 port.Write("A+" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
-                Console.WriteLine("A+" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
+                //Console.WriteLine("sent to micro: A+" + charAngle + "D" + charFirstDistVal + charFirstDistDecimal);
             }
 
-            Console.WriteLine("Sent message");
-
             port.Close();
+            return;
         }
 
         private static RecognizerInfo GetKinectRecognizer()
