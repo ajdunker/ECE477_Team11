@@ -1,0 +1,13 @@
+#
+# Generated - do not edit!
+#
+# NOCDDL
+#
+CND_BASEDIR=`pwd`
+# pic24fj128ga010_main_project configuration
+CND_ARTIFACT_DIR_pic24fj128ga010_main_project=dist/pic24fj128ga010_main_project/production
+CND_ARTIFACT_NAME_pic24fj128ga010_main_project=pic24fj128ga010_main_project.X.production.hex
+CND_ARTIFACT_PATH_pic24fj128ga010_main_project=dist/pic24fj128ga010_main_project/production/pic24fj128ga010_main_project.X.production.hex
+CND_PACKAGE_DIR_pic24fj128ga010_main_project=${CND_DISTDIR}/pic24fj128ga010_main_project/package
+CND_PACKAGE_NAME_pic24fj128ga010_main_project=pic24fj128ga010mainproject.x.tar
+CND_PACKAGE_PATH_pic24fj128ga010_main_project=${CND_DISTDIR}/pic24fj128ga010_main_project/package/pic24fj128ga010mainproject.x.tar

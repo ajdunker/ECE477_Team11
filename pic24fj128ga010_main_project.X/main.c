@@ -53,7 +53,7 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #define FCY (FOSC/2)
 
 #include <libpic30.h>
-
+#include "mcc_generated_files/mcc.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <stddef.h>
@@ -76,8 +76,15 @@ SUBSTITUTE GOODS, TECHNOLOGY, SERVICES, OR ANY CLAIMS BY THIRD PARTIES
 #define PWM_PORT1  PORTDbits.RD1
 #define PWM_TRIS1  TRISDbits.TRISD1
 // limit switch "button style" port declarations
-#define limit_PORT PORTDbits.RD7
-#define limit_TRIS  TRISDbits.TRISD7
+#define limit_PORT PORTDbits.RD11
+#define limit_TRIS  TRISDbits.TRISD11
+//#define beer_PORT PORTDbits.RD11
+//#define beer_TRIS TRISDbits.TRISD11
+// UART ports
+#define RX_port PORTFbits.RF2
+#define RX_TRIS TRISFbits.TRISF2
+#define CTS_port PORTDbits.RD9
+#define CTS_TRIS TRISDbits.TRISD9
 
 // *****************************************************************************
 // *****************************************************************************
@@ -112,7 +119,7 @@ APP_DATA appData = {
 int main ( void )
 {
     /* Call the System Intialize routine*/
-    SYS_Initialize ( ) ;
+    //SYS_Initialize ( ) ;
 
     /* Display welcome message */
     LCD_PutString ( (char*) &appData.messageLine1[0] , sizeof (appData.messageLine1 ) - 1  ) ;
@@ -122,47 +129,102 @@ int main ( void )
     while (!BUTTON_IsPressed ( BUTTON_S3 )) ;
     
     // initialize the limit switch and PWM tristate buffers
-    limit_TRIS = 1;
-    PWM_TRIS1 = 0;
+    limit_TRIS = 1; //define as input to micro
+    PWM_TRIS1 = 0; //define as output from micro
     limit_testing();
     //pwm_testing();
+    //UART_testing();
     
-    // loop initializations
-    int state = IDLE;
-    
-    while (1)
-    {
-        switch (state)
-        {
-            case IDLE :
-                // wait for signal from laptop
-                // if signal -> CHECK_BEER
-                
-            case CHECK_BEER :
-                // if beer -> LOADING
-                // else -> IDLE && print NO BEER, DAB AGAIN W/ BEER
-                
-            case LOADING :
-                // move servo to release beer
-                // move servo back to stop next beer
-                // if launcher limit switch pressed -> LAUNCH_PREP
-                // else -> LOADING
-                
-            case LAUNCH_PREP :
-                // turn on the air pump
-                // start PWM loop
-                // if at any point we get the pressure reading we need (turn off air pump) && were in the right position, BREAK
-                // goto -> LAUNCHING
-            
-            case LAUNCH :
-                // trigger solenoid pressure release
-                // goto -> IDLE
-                
-            default : 
-                state = IDLE;
-        }
-    }
     return (0);
+}
+
+void servoRotate0() //0 Degree
+{
+  unsigned int i;
+  for(i=0;i<30;i++)
+  {
+      if (limit_PORT == 1)
+          break; // if the limit switch becomes pressed, break the loop
+      PWM_PORT1 = 1;
+      __delay_us(500);
+      PWM_PORT1 = 0;
+      __delay_us(19200);
+  }
+}
+
+void servoRotate90() //90 Degree
+{
+  unsigned int i;
+  for(i=0;i<30;i++)
+  {
+    PWM_PORT1 = 1;
+    __delay_us(1500);
+    PWM_PORT1 = 0;
+    __delay_us(18500);
+  }
+}
+
+void servoRotate180() //180 Degree
+{
+  unsigned int i;
+  for(i=0;i<30;i++)
+  {
+      if (limit_PORT == 0)
+          break; // if the switch becomes unpressed, break the loop
+      PWM_PORT1 = 1;
+      __delay_us(2550);
+      PWM_PORT1 = 0;
+      __delay_us(17800);
+  }
+}
+
+void pwm_testing ( void )
+{
+    char pwm_string[] = "Moving the Servo Motor...";
+    LCD_ClearScreen();
+    LCD_PutString((char*)&pwm_string,sizeof(pwm_string)-1);
+    do
+    {
+        servoRotate0(); //0 Degree
+        __delay_ms(500);
+        servoRotate90(); //90 Degree
+        __delay_ms(500);
+        servoRotate180(); //180 Degree
+    }while(1);
+    return;
+}
+
+void limit_testing ( void )
+{
+    char limit_string1[] = "LIMIT SWITCH PRESSED";
+    char limit_string2[] = "LIMIT SWITCH NOT PRESSED";
+    char limit_string3[] = "READY FOR TESTING";
+    LCD_ClearScreen();
+    LCD_PutString((char*)&limit_string3,sizeof(limit_string3)-1);
+    int flag = 0;
+    do
+    {
+        if (limit_PORT == 1)
+        {
+            if (flag == 0)
+            {
+               LCD_ClearScreen();
+               LCD_PutString((char*)&limit_string1,sizeof(limit_string1)-1);
+               flag = 1;
+               servoRotate180(); // move servo to 180 when limit switch is pressed
+            }
+        } else
+        {
+            if (flag == 1)
+            {
+               LCD_ClearScreen();
+               LCD_PutString((char*)&limit_string2,sizeof(limit_string2)-1);
+               flag = 0;
+               servoRotate0(); // move servo back to 0 when limit switch is released
+            }
+        }
+    }while(1);
+    return;
 }
 /*******************************************************************************
 
@@ -368,93 +430,4 @@ void Hex2Dec ( unsigned char count )
     }
 
     appData.ones = count ;
-}
-
-void servoRotate0() //0 Degree
-{
-  unsigned int i;
-  for(i=0;i<30;i++)
-  {
-      if (limit_PORT == 1)
-          break; // if the limit switch becomes pressed, break the loop
-      PWM_PORT1 = 1;
-      __delay_us(500);
-      PWM_PORT1 = 0;
-      __delay_us(19200);
-  }
-}
-
-void servoRotate90() //90 Degree
-{
-  unsigned int i;
-  for(i=0;i<30;i++)
-  {
-    PWM_PORT1 = 1;
-    __delay_us(1500);
-    PWM_PORT1 = 0;
-    __delay_us(18500);
-  }
-}
-
-void servoRotate180() //180 Degree
-{
-  unsigned int i;
-  for(i=0;i<30;i++)
-  {
-      if (limit_PORT == 0)
-          break; // if the switch becomes unpressed, break the loop
-      PWM_PORT1 = 1;
-      __delay_us(2550);
-      PWM_PORT1 = 0;
-      __delay_us(17800);
-  }
-}
-
-void pwm_testing ( void )
-{
-    char pwm_string[] = "Moving the Servo Motor...";
-    LCD_ClearScreen();
-    LCD_PutString((char*)&pwm_string,sizeof(pwm_string)-1);
-    do
-    {
-        servoRotate0(); //0 Degree
-        __delay_ms(500);
-        servoRotate90(); //90 Degree
-        __delay_ms(500);
-        servoRotate180(); //180 Degree
-    }while(1);
-    return;
-}
-
-void limit_testing ( void )
-{
-    char limit_string1[] = "LIMIT SWITCH PRESSED";
-    char limit_string2[] = "LIMIT SWITCH NOT PRESSED";
-    char limit_string3[] = "READY FOR TESTING";
-    LCD_ClearScreen();
-    LCD_PutString((char*)&limit_string3,sizeof(limit_string3)-1);
-    int flag = 0;
-    do
-    {
-        if (limit_PORT == 1)
-        {
-            if (flag == 0)
-            {
-               LCD_ClearScreen();
-               LCD_PutString((char*)&limit_string1,sizeof(limit_string1)-1);
-               flag = 1;
-               servoRotate180(); // move servo to 180 when limit switch is pressed
-            }
-        } else
-        {
-            if (flag == 1)
-            {
-               LCD_ClearScreen();
-               LCD_PutString((char*)&limit_string2,sizeof(limit_string2)-1);
-               flag = 0;
-               servoRotate0(); // move servo back to 0 when limit switch is released
-            }
-        }
-    }while(1);
-    return;
 }
