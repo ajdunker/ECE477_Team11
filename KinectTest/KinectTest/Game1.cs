@@ -167,8 +167,8 @@ namespace KinectTest
                     foreach (Skeleton skel in skeletonData.Where(s => s.TrackingId != 0))
                         skeletonLength += 1;
 
-                    numFramesOnUser += 1;
-                    if (numFramesOnUser >= 5 && dabHoldCount == 0)
+                    numFramesOnUser += 1; //increment number of frames that this user has been tracked for
+                    if (numFramesOnUser >= 5 && dabHoldCount == 0) //switch to new user if no gesture is being recognized and 5 frames are up
                     {
                         playerIndex = (playerIndex + 1) % 6;
                         numFramesOnUser = 0;
@@ -181,7 +181,7 @@ namespace KinectTest
                         dabHoldCount = 0;
                     }*/
 
-                    if (skeletonData[playerIndex].TrackingId != 0)
+                    if (skeletonData[playerIndex].TrackingId != 0) //tracking id != 0 when it is a valid player
                     {
                         kinectSensor.SkeletonStream.ChooseSkeletons(skeletonData[playerIndex].TrackingId);
                         //dabHoldCount = 0;
@@ -196,6 +196,7 @@ namespace KinectTest
                     double theta;
                     if (skeletonData[playerIndex] != null)
                     {
+                        //set the joints that we will be comparing
                         rightHand = skeletonData[playerIndex].Joints[JointType.HandRight];
                         rightShoulder = skeletonData[playerIndex].Joints[JointType.ShoulderRight];
                         leftHand = skeletonData[playerIndex].Joints[JointType.HandLeft];
@@ -204,14 +205,14 @@ namespace KinectTest
                         //Console.WriteLine("player index: " + playerIndex + " hold count is: " + dabHoldCount);
                         if (rightHand.Position.Y > rightShoulder.Position.Y && leftHand.Position.Y > leftShoulder.Position.Y && rightHand.Position.X < rightShoulder.Position.X && leftHand.Position.X < leftShoulder.Position.X && leftHand.Position.X < rightShoulder.Position.X)
                         {
-                            if (dabHoldCount == 30)
+                            if (dabHoldCount == 30) //30 frames in a row counts as a dab
                             {
                                 System.Diagnostics.Debug.WriteLine("Recognized dab on user: " + playerSkeleton.TrackingId);
                                 theta = Math.Abs(Math.Atan(head.Position.X / head.Position.Z) * 180 / Math.PI);
-                                enableSkeleton = false;
-                                sendUART(head.Position.X, head.Position.Z, theta);
+                                enableSkeleton = false; //stop event handler on skeletons
+                                sendUART(head.Position.X, head.Position.Z, theta); //send the data to micro
                                 System.Threading.Thread.Sleep(10000);
-                                enableSkeleton = true;
+                                enableSkeleton = true; //re enable event handler
                                 dabHoldCount = 0;
                             }
                             else
@@ -219,7 +220,7 @@ namespace KinectTest
                                 dabHoldCount += 1;
                             }
                         }
-                        else
+                        else //reset the dab count if streak is broken
                         {
                             //System.Diagnostics.Debug.WriteLine("No gesture recognized for user: " + playerSkeleton.TrackingId);
                             dabHoldCount = 0;
@@ -298,13 +299,15 @@ namespace KinectTest
             {
                 intAngle = 10 ;
             }
-            //Console.WriteLine("intAngle: " + intAngle);
+
+            //convert to byte representations before sending
             char charAngle = (char)intAngle;
             int intFirstDistDecimal = Convert.ToInt32((zVal - Math.Truncate(zVal)) * 10);
             char charFirstDistDecimal = (char)intFirstDistDecimal;
             int intFirstDistVal = Convert.ToInt32(Math.Truncate(zVal));
             char charFirstDistVal = (char)intFirstDistVal;
 
+            //debugging purposes
             Console.WriteLine("angle used: " + intAngle);
             Console.WriteLine("distance used: " + intFirstDistVal + "." + intFirstDistDecimal);
 
